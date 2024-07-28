@@ -1,0 +1,27 @@
+line_start = 1
+line_end = 999
+
+# select_all = true
+
+fraction_digits = 2
+
+[[replacement]]
+old = "-17.8"
+new = "0"
+
+
+[[selected]]
+name = "A"
+rename = "Aa"
+
+[[selected.replacement]]
+old = "ON"
+new = "1"
+
+[[selected.replacement]]
+old = "OFF"
+new = "0"
+
+[[selected]]
+name = "z"
+fraction_digits = 4
