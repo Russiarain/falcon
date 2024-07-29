@@ -1,7 +1,6 @@
 line_start = 1
 line_end = 999
 
-# select_all = true
 
 fraction_digits = 2
 
@@ -11,17 +10,18 @@ new = "0"
 
 
 [[selected]]
-name = "A"
-rename = "Aa"
+name = "a"
+rename = "A"
+fraction_digits = 0
 
 [[selected.replacement]]
-old = "ON"
+old = "on"
 new = "1"
 
 [[selected.replacement]]
-old = "OFF"
+old = "off"
 new = "0"
 
 [[selected]]
-name = "z"
-fraction_digits = 4
+name = "c"
+fraction_digits = 1
