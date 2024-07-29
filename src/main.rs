@@ -1,8 +1,19 @@
 use std::error::Error;
 use std::fs::File;
-use std::io;
+use std::env;
+use clap::Parser;
 use csv::ReaderBuilder;
+use serde::Deserialize;
 
+#[derive(Parser)]
+struct Cli {
+    #[clap(short, long)]
+    config: Option<String>,
+    input: String,
+    output: String,
+}
+
+#[derive(Deserialize)]
 struct Config {
     line_start: Option<i32>,
     line_end: Option<i32>,
@@ -11,11 +22,13 @@ struct Config {
     selected: Option<Vec<Selected>>,
 }
 
+#[derive(Deserialize)]
 struct Replacement {
     old: String,
     new: String,
 }
 
+#[derive(Deserialize)]
 struct Selected {
     name: String,
     rename: Option<String>,
@@ -41,8 +54,8 @@ fn format_float(value: &str, fraction_digits: u8) -> String {
     }
 }
 
-fn select_columns(config: Config, file_path: &str) -> Result<(), Box<dyn Error>> {
-    let file = File::open(file_path)?;
+fn select_columns(config: Config, input_path: &str, output_path: &str) -> Result<(), Box<dyn Error>> {
+    let file = File::open(input_path)?;
     let mut rdr = ReaderBuilder::new().from_reader(file);
 
     let headers = rdr.headers()?.clone();
@@ -51,7 +64,7 @@ fn select_columns(config: Config, file_path: &str) -> Result<(), Box<dyn Error>>
         .map(|col| headers.iter().position(|h| h == col.name).unwrap())
         .collect();
 
-    let mut wtr = csv::Writer::from_writer(io::stdout());
+    let mut wtr = csv::Writer::from_writer(File::create(output_path)?);
     let output_headers: Vec<String> = selected_columns.iter()
         .map(|col| col.rename.clone().unwrap_or_else(|| col.name.clone()))
         .collect();
@@ -83,46 +96,18 @@ fn select_columns(config: Config, file_path: &str) -> Result<(), Box<dyn Error>>
     Ok(())
 }
 
-fn main() {
-    let config = Config {
-        line_start: Some(4),
-        line_end: Some(8),
-        replacement: Some(vec![
-            Replacement { old: String::from("on"), new: String::from("1") },
-            Replacement { old: String::from("off"), new: String::from("0") },
-        ]),
-        fraction_digits: Some(2),
-        selected: Some(vec![
-            Selected {
-                name: String::from("a"),
-                rename: Some(String::from("A")),
-                fraction_digits: Some(0),
-                replacement: Some(vec![
-                    Replacement { old: String::from("YES"), new: String::from("1") },
-                    Replacement { old: String::from("NO"), new: String::from("0") },
-                ]),
-            },
-            Selected {
-                name: String::from("m,n"),
-                rename: None,
-                fraction_digits: Some(0),
-                replacement: Some(vec![
-                    Replacement { old: String::from("开"), new: String::from("1") },
-                    Replacement { old: String::from("关"), new: String::from("0") },
-                ]),
-            },
-            Selected {
-                name: String::from("c"),
-                rename: None,
-                fraction_digits: None,
-                replacement: None,
-            },
-        ]),
+fn main()-> Result<(), Box<dyn Error>> {
+        let args = Cli::parse();
+
+    let config_path = args.config.or_else(|| env::var("FALCON_CONF").ok());
+    let config: Config = if let Some(path) = config_path {
+        let config_content = std::fs::read_to_string(path)?;
+        toml::from_str(&config_content)?
+    } else {
+        return Err("Configuration file not specified and FALCON_CONF environment variable not set".into());
     };
 
-    let file_path = "data.csv";
+    select_columns(config, &args.input, &args.output)?;
 
-    if let Err(err) = select_columns(config, file_path) {
-        eprintln!("Error: {}", err);
-    }
+    Ok(())
 }
