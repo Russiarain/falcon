@@ -1,18 +1,9 @@
-use clap::Parser;
 use csv::ReaderBuilder;
 use serde::Deserialize;
-use std::env;
+use std::env::args;
 use std::error::Error;
 use std::fs::File;
 use std::time::Instant;
-
-#[derive(Parser)]
-struct Cli {
-    #[clap(short, long)]
-    config: Option<String>,
-    input: String,
-    output: String,
-}
 
 #[derive(Deserialize)]
 struct Config {
@@ -112,20 +103,22 @@ fn select_columns(
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let args = Cli::parse();
-
-    let config_path = args.config.or_else(|| env::var("FALCON_CONF").ok());
-    let config: Config = if let Some(path) = config_path {
-        let config_content = std::fs::read_to_string(path)?;
-        toml::from_str(&config_content)?
-    } else {
-        return Err(
-            "Configuration file not specified and FALCON_CONF environment variable not set".into(),
-        );
-    };
+    let ag = args();
+    // let config_path = arguments.config.or_else(|| env::var("FALCON_CONF").ok());
+    // let config: Config = if let Some(path) = config_path {
+    //     let config_content = std::fs::read_to_string(path)?;
+    //     toml::from_str(&config_content)?
+    // } else {
+    //     return Err(
+    //         "Configuration file not specified and FALCON_CONF environment variable not set".into(),
+    //     );
+    // };
+    let arg_list: Vec<String> = ag.collect();
+    let config_content = std::fs::read_to_string(arg_list[1].clone())?;
+    let config = toml::from_str(&config_content)?;
 
     let start_time = Instant::now();
-    select_columns(config, &args.input, &args.output)?;
+    select_columns(config, &arg_list[2].clone(), &arg_list[3].clone())?;
     let duration = start_time.elapsed();
 
     println!("Done in {} ms", duration.as_millis());
