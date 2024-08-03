@@ -4,6 +4,8 @@ use csv::ReaderBuilder;
 
 use crate::{Arguments, Replacement, Selected};
 
+use super::helper::print_time_cost;
+
 fn apply_replacements(value: &str, replacements: &[Replacement]) -> String {
     let mut new_value = value.to_string();
     for replacement in replacements {
@@ -74,8 +76,7 @@ pub fn run(arg:Arguments) -> Result<(), Box<dyn Error>> {
 
     wtr.flush()?;
 
-    let duration = start_time.elapsed();
-    println!("Done in {} ms", duration.as_millis());
+    print_time_cost(start_time.elapsed().as_millis());
     Ok(())
 }
 

@@ -34,3 +34,7 @@ pub fn print_help() {
 pub fn print_error(err: &str) {
     eprintln!("{}", Red.paint(err));
 }
+
+pub fn print_time_cost(n: u128) {
+    println!("{} in {} ms", Green.paint("Finished"), n);
+}
