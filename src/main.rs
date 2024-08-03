@@ -10,7 +10,7 @@ struct Config {
     line_start: Option<i32>,
     line_end: Option<i32>,
     replacement: Option<Vec<Replacement>>,
-    fraction_digits: Option<u8>,
+    fraction_digits: Option<usize>,
     selected: Option<Vec<Selected>>,
 }
 
@@ -24,7 +24,7 @@ struct Replacement {
 struct Selected {
     name: String,
     rename: Option<String>,
-    fraction_digits: Option<u8>,
+    fraction_digits: Option<usize>,
     replacement: Option<Vec<Replacement>>,
 }
 
@@ -39,9 +39,9 @@ fn apply_replacements(value: &str, replacements: &[Replacement]) -> String {
     new_value
 }
 
-fn format_float(value: &str, fraction_digits: u8) -> String {
+fn format_float(value: &str, fraction_digits: usize) -> String {
     match value.parse::<f64>() {
-        Ok(num) => format!("{:.1$}", num, fraction_digits as usize),
+        Ok(num) => format!("{:.1$}", num, fraction_digits),
         Err(_) => value.to_string(),
     }
 }
