@@ -1,6 +1,7 @@
 use serde::Deserialize;
 
 pub mod lib {
+    pub mod helper;
     pub mod parser;
     pub mod runner;
 }
