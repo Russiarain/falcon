@@ -1,19 +1,41 @@
-line_start = 1
-line_end = 999
+# Optional
+# select from the 1st row if not configured
+line_start = 3
 
+# Optional
+# select to the last row if not configured
+line_end = 9
 
+# Optional
+# global configuration of fractional digits
+# only applys to floating point number, can be overridden by configurations in [selected]
+# e.g.
+# `3.14159` with fraction_digits=4 will be formatted to `3.1416`.
+# `3` or `foo` won't be formatted.
 fraction_digits = 2
 
+# Optional
+# global configuration of replacement table
+# Note that global replacements will be applied to the cells first, use global replacement with caution.
 [[replacement]]
+# `old` and `new` should be strings
 old = "-17.8"
 new = "0"
 
 
 [[selected]]
+# Mandatory
 name = "a"
+# Optional
+# `name` will be used if not configured
 rename = "A"
+# Optional
+# global fraction_digits will be used if not configured
+# global fraction_digits will be overridden if configured
 fraction_digits = 0
 
+# Optional
+# only applies to current selected column
 [[selected.replacement]]
 old = "on"
 new = "1"
