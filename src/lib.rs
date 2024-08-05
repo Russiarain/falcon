@@ -17,7 +17,7 @@ pub struct Config {
     selected: Option<Vec<Selected>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Replacement {
     old: String,
     new: String,
@@ -41,6 +41,13 @@ impl Hash for Replacement {
 pub struct Selected {
     name: String,
     rename: Option<String>,
+    fraction_digits: Option<usize>,
+    replacement: Option<Vec<Replacement>>,
+}
+
+pub struct Column {
+    index: usize,
+    name: String,
     fraction_digits: Option<usize>,
     replacement: Option<Vec<Replacement>>,
 }
