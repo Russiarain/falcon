@@ -7,7 +7,7 @@ use crate::{Arguments, Column, Replacement};
 use super::helper::print_time_cost;
 
 fn apply_replacements(value: &str, replacements: &[Replacement]) -> String {
-    let mut new_value = value.to_string();
+    let mut new_value = value.to_owned();
     for replacement in replacements {
         if new_value == replacement.old {
             new_value = replacement.new.clone();
@@ -18,9 +18,9 @@ fn apply_replacements(value: &str, replacements: &[Replacement]) -> String {
 }
 
 fn format_float(value: &str, fraction_digits: usize) -> String {
-    match value.parse::<f64>() {
+    match value.parse::<f32>() {
         Ok(num) => format!("{:.1$}", num, fraction_digits),
-        Err(_) => value.to_string(),
+        Err(_) => value.to_owned(),
     }
 }
 
@@ -116,7 +116,7 @@ pub fn run(arg: Arguments) -> Result<(), Box<dyn Error>> {
             let selected: Vec<String> = columns
                 .iter()
                 .map(|col| {
-                    let mut value = record[col.index].to_string();
+                    let mut value = record[col.index].to_owned();
                     if let Some(replacements) = &col.replacement {
                         value = apply_replacements(&value, replacements);
                     }
