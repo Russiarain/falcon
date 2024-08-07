@@ -29,9 +29,12 @@ fn get_col_fracdigits(
     global_digits: Option<usize>,
     col_digits: Option<usize>,
 ) -> Option<usize> {
-    match data.parse::<f64>() {
-        Ok(_) => col_digits.or_else(|| global_digits),
-        Err(_) => None,
+    match data.parse::<i32>() {
+        Ok(_) => None,
+        Err(_) => match data.parse::<f32>() {
+            Ok(_) => col_digits.or_else(|| global_digits),
+            Err(_) => None,
+        },
     }
 }
 
@@ -131,4 +134,23 @@ pub fn run(arg: Arguments) -> Result<(), Box<dyn Error>> {
 
     print_time_cost(start_time.elapsed().as_millis());
     Ok(())
+}
+
+
+#[cfg(test)]
+mod tests {
+    use crate::lib::runner::get_col_fracdigits;
+
+    #[test]
+    fn col_fracdigits_test() {
+        let col_digits = None;
+        let global_digits = Some(4);
+
+        let data = "3";
+        assert_eq!(get_col_fracdigits(data, global_digits, col_digits), None);
+        let data = "-3.14159";
+        assert_eq!(get_col_fracdigits(data, global_digits, col_digits), global_digits);
+        let data = "hello";
+        assert_eq!(get_col_fracdigits(data, global_digits, col_digits), None);
+    }
 }
