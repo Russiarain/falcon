@@ -6,7 +6,7 @@ use crate::{Arguments, Column, Replacement};
 
 use super::helper::print_time_cost;
 
-fn apply_replacements(value: &str, replacements: &[Replacement]) -> String {
+fn apply_replacements(value: &str, replacements: &HashSet<Replacement>) -> String {
     let mut new_value = value.to_owned();
     for replacement in replacements {
         if new_value == replacement.old {
@@ -41,31 +41,19 @@ fn get_col_fracdigits(
 fn merge_replacements(
     global: &Option<Vec<Replacement>>,
     this: &Option<Vec<Replacement>>,
-) -> Option<Vec<Replacement>> {
-    if global.is_some() || this.is_some() {
-        let mut set: HashSet<Replacement> = HashSet::new();
-        if let Some(replacements) = global {
-            for r in replacements {
-                if set.contains(r) {
-                    set.replace(r.clone());
-                } else {
-                    set.insert(r.clone());
-                }
+) -> Option<HashSet<Replacement>> {
+    match global {
+        Some(replacements) => {
+            let mut set = HashSet::from_iter(replacements.clone().into_iter());
+            if let Some(replacements) = this {
+                set.extend(replacements.clone().into_iter());
             }
+            return Some(set);
         }
-        if let Some(replacements) = this {
-            for r in replacements {
-                if set.contains(r) {
-                    set.replace(r.clone());
-                } else {
-                    set.insert(r.clone());
-                }
-            }
-        }
-        let val: Vec<Replacement> = set.into_iter().collect();
-        Some(val)
-    } else {
-        None
+        None => match this {
+            Some(replacements) => Some(HashSet::from_iter(replacements.clone().into_iter())),
+            None => None,
+        },
     }
 }
 
@@ -136,7 +124,6 @@ pub fn run(arg: Arguments) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-
 #[cfg(test)]
 mod tests {
     use crate::lib::runner::get_col_fracdigits;
@@ -149,7 +136,10 @@ mod tests {
         let data = "3";
         assert_eq!(get_col_fracdigits(data, global_digits, col_digits), None);
         let data = "-3.14159";
-        assert_eq!(get_col_fracdigits(data, global_digits, col_digits), global_digits);
+        assert_eq!(
+            get_col_fracdigits(data, global_digits, col_digits),
+            global_digits
+        );
         let data = "hello";
         assert_eq!(get_col_fracdigits(data, global_digits, col_digits), None);
     }
