@@ -7,14 +7,11 @@ use crate::{Arguments, Column, Replacement};
 use super::helper::print_time_cost;
 
 fn apply_replacements(value: &str, replacements: &HashSet<Replacement>) -> String {
-    let mut new_value = value.to_owned();
-    for replacement in replacements {
-        if new_value == replacement.old {
-            new_value = replacement.new.clone();
-            break;
-        }
-    }
-    new_value
+    replacements
+        .iter()
+        .find(|r| value == r.old)
+        .map(|r| r.new.clone())
+        .unwrap_or_else(|| value.to_owned())
 }
 
 fn format_float(value: &str, fraction_digits: usize) -> String {
