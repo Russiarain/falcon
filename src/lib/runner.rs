@@ -79,10 +79,7 @@ pub fn run(arg: Arguments) -> Result<(), Box<dyn Error>> {
         match headers.iter().position(|h| h == selected.name) {
             Some(idx) => columns.push(Column {
                 index: idx,
-                name: selected
-                    .rename
-                    .to_owned()
-                    .unwrap_or(selected.name.to_owned()),
+                name: selected.rename.clone().unwrap_or(selected.name.to_owned()),
                 fraction_digits: selected.fraction_digits,
                 replacement: merge_replacements(&config.replacement, &selected.replacement),
             }),
@@ -95,14 +92,18 @@ pub fn run(arg: Arguments) -> Result<(), Box<dyn Error>> {
     let output_headers: Vec<String> = columns.iter().map(|col| col.name.to_owned()).collect();
     wtr.write_record(&output_headers)?;
 
-    for (i, result) in rdr.records().enumerate() {
-        let record = result?;
-        let line_num = i as i32 + 1;
+    let mut record = csv::ByteRecord::new();
+
+    let mut line_num = 1;
+    while rdr.read_byte_record(&mut record)? {
         if line_num == 1 {
             for col in &mut columns {
                 let col_data = &record[col.index];
-                col.fraction_digits =
-                    get_col_fracdigits(col_data, config.fraction_digits, col.fraction_digits);
+                col.fraction_digits = get_col_fracdigits(
+                    std::str::from_utf8(col_data)?,
+                    config.fraction_digits,
+                    col.fraction_digits,
+                );
             }
         }
         if config.line_start.map_or(true, |start| line_num >= start)
@@ -111,7 +112,7 @@ pub fn run(arg: Arguments) -> Result<(), Box<dyn Error>> {
             let selected: Vec<String> = columns
                 .iter()
                 .map(|col| {
-                    let mut value = record[col.index].to_owned();
+                    let mut value = String::from_utf8(record[col.index].to_vec()).unwrap();
                     if let Some(replacements) = &col.replacement {
                         value = apply_replacements(&value, replacements);
                     }
@@ -123,6 +124,7 @@ pub fn run(arg: Arguments) -> Result<(), Box<dyn Error>> {
                 .collect();
             wtr.write_record(&selected)?;
         }
+        line_num += 1;
     }
 
     wtr.flush()?;
