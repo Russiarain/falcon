@@ -35,6 +35,9 @@ fn get_col_fracdigits(
     global_digits: Option<usize>,
     col_digits: Option<usize>,
 ) -> Option<usize> {
+    if global_digits.is_none() && col_digits.is_none() {
+        return None;
+    }
     match data.parse::<i32>() {
         Ok(_) => None,
         Err(_) => match data.parse::<f32>() {
@@ -152,6 +155,23 @@ mod tests {
             global_digits
         );
         let data = "hello";
+        assert_eq!(get_col_fracdigits(data, global_digits, col_digits), None);
+
+        let col_digits = None;
+        let global_digits = None;
+        let data = "-3.14159";
+        assert_eq!(get_col_fracdigits(data, global_digits, col_digits), None);
+
+        let col_digits = Some(2);
+        let global_digits = Some(4);
+        let data = "-3.14159";
+        // check for column config override
+        assert_eq!(
+            get_col_fracdigits(data, global_digits, col_digits),
+            col_digits
+        );
+
+        let data = "5";
         assert_eq!(get_col_fracdigits(data, global_digits, col_digits), None);
     }
 }
