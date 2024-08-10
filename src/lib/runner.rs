@@ -1,6 +1,7 @@
 use std::{collections::HashSet, error::Error, fs::File, time::Instant};
 
 use csv::ReaderBuilder;
+use ryu::Buffer;
 
 use crate::{Arguments, Column, Replacement};
 
@@ -14,9 +15,17 @@ fn apply_replacements(value: &str, replacements: &HashSet<Replacement>) -> Strin
         .unwrap_or_else(|| value.to_owned())
 }
 
-fn format_float(value: &str, fraction_digits: usize) -> String {
+fn format_float(value: &str, digits: usize, buffer: &mut Buffer) -> String {
     match value.parse::<f32>() {
-        Ok(num) => format!("{:.1$}", num, fraction_digits),
+        Ok(num) => {
+            if digits == 0 {
+                return (num.round() as i32).to_string();
+            }
+            let multiplier = 10.0f32.powi(digits as i32);
+            buffer
+                .format((num * multiplier).round() / multiplier)
+                .to_owned()
+        }
         Err(_) => value.to_owned(),
     }
 }
@@ -82,6 +91,7 @@ pub fn run(arg: Arguments) -> Result<(), Box<dyn Error>> {
     }
 
     let mut wtr = csv::Writer::from_writer(File::create(output_path)?);
+    let mut buffer = ryu::Buffer::new();
     let output_headers: Vec<String> = columns.iter().map(|col| col.name.to_owned()).collect();
     wtr.write_record(&output_headers)?;
 
@@ -106,7 +116,7 @@ pub fn run(arg: Arguments) -> Result<(), Box<dyn Error>> {
                         value = apply_replacements(&value, replacements);
                     }
                     if let Some(digits) = col.fraction_digits {
-                        value = format_float(&value, digits);
+                        value = format_float(&value, digits, &mut buffer);
                     }
                     value
                 })
