@@ -1,49 +1,76 @@
-# Optional
-# select from the 1st row if not configured
+# Line number (included) where the selection begins
+# Optional, defaults to the 1st row
 line_start = 3
 
-# Optional
-# select to the last row if not configured
+# Line number (included) where the selection ends
+# Optional, defaults to the last row
 line_end = 9
 
-# Optional
-# global configuration of fractional digits
-# only applys to floating point number, can be overridden by configurations in [selected]
+# Global configuration of fractional digits for floating point number
+# Optional, can be overridden by configurations in [selected]
+# Note:
+# fraction_digits configures the maximum length of digits after the decimal point,
+# which means that the length of fraction parts depends on the number itself.
 # e.g.
-# `3.14159` with fraction_digits=4 will be formatted to `3.1416`.
-# `3` or `foo` won't be formatted.
+# `3.14159` with fraction_digits=2 will be formatted to `3.14`.
+# `1.00001` with fraction_digits=4 will be formatted to `1.0`, not `1.0000`.
+# `1.00008` with fraction_digits=4 will be formatted to `1.0001`.
+# `3` (integer) or `foo` (strings that can't be parsed to number) won't be formatted.
 fraction_digits = 2
 
-# Optional
-# global configuration of replacement table
-# Note that global replacements will be applied to the cells first, use global replacement with caution.
+# Global configuration of replacement table
+# Optional, can be overridden by configurations in [selected]
+# Both "old" and "new" should be strings
+# Note:
+# "old" must fully match to a cell's content to make the replacement happen
 [[replacement]]
-# `old` and `new` should be strings
-old = "-17.8"
+old = "65535"
 new = "0"
 
+[[replacement]]
+old = "hell0"
+new = "hello"
 
+# The following are selected table
+# The order of the columns in the output file is the same as the order of configurations here
+
+# ===========   1st selection   ===========
 [[selected]]
-# Mandatory
-name = "a"
-# Optional
-# `name` will be used if not configured
-rename = "A"
-# Optional
-# global fraction_digits will be used if not configured
-# global fraction_digits will be overridden if configured
+# Name of the column that you want to select
+name = "时间"
+# You can override the column name in the output file by this.
+# Optional, defaults to the original name.
+rename = "Time"
+# fraction_digits for current selection
+# Optional, defaults to global fraction_digits
 fraction_digits = 0
 
-# Optional
-# only applies to current selected column
+
+# ===========   2nd selection   ===========
+[[selected]]
+name = "Status"
+
+# Replacement for current selection
 [[selected.replacement]]
-old = "on"
+old = "ON"
 new = "1"
 
 [[selected.replacement]]
-old = "off"
+old = "OFF"
 new = "0"
 
+# ===========   3rd selection   ===========
 [[selected]]
-name = "c"
+name = "ErrCode"
+
+# Override global replacements with same "old" value
+[[selected.replacement]]
+old = "65535"
+new = "7"
+
+# ===========   4th selection   ===========
+[[selected]]
+name = "Temperature"
+rename = "T"
+# this will override the global fraction_digits
 fraction_digits = 1
