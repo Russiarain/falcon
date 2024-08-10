@@ -123,6 +123,8 @@ pub fn run(arg: Arguments) -> Result<(), Box<dyn Error>> {
                 })
                 .collect();
             wtr.write_record(&selected)?;
+        } else if config.line_end.map_or(false, |end| line_num > end) {
+            break;
         }
         line_num += 1;
     }
