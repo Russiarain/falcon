@@ -1,4 +1,8 @@
-use std::env::{self, args};
+use std::{
+    env::{self, args},
+    fs::read_to_string,
+    path::Path,
+};
 
 use crate::{Arguments, Config};
 
@@ -8,68 +12,68 @@ const ENV_NOT_FOUND: &str = "env variable `FALCON_CONF` is not found";
 const FAILED_TO_READ_CONFIG: &str = "Failed to read config toml file";
 const FAILED_TO_PARSE_CONFIG: &str = "Failed to parse config toml file";
 
-pub fn parse() -> Result<Option<Arguments>, &'static str> {
+pub fn parse() -> Result<Option<Arguments>, String> {
     let arg: Vec<String> = args().collect();
-    if arg.len() == 1 {
-        return Ok(None);
-    }
-    match arg.len() {
+    let (input, output, conf) = match arg.len() {
+        1 => return Ok(None),
         2 => {
             let input = arg.get(1).unwrap();
-            if !input.ends_with(".csv") {
-                return Err("Input must be a csv file!");
-            }
-            let config = get_config(None)?;
-            Ok(Some(Arguments {
-                config,
-                input: input.to_owned(),
-                output: get_out_name(&input),
-            }))
+            (input.clone(), get_out_name(&input), None)
         }
-        3 => {
-            let input = arg.get(1).unwrap();
-            if !input.ends_with(".csv") {
-                return Err("Input must be a csv file!");
-            }
-            let output = arg.get(2).unwrap();
-            if !output.ends_with(".csv") {
-                return Err("Output must be a csv file!");
-            }
-            Ok(Some(Arguments {
-                config: get_config(None)?,
-                input: input.to_owned(),
-                output: output.to_owned(),
-            }))
+        3 => (
+            arg.get(1).unwrap().clone(),
+            arg.get(2).unwrap().clone(),
+            None,
+        ),
+        4 => (
+            arg.get(1).unwrap().clone(),
+            arg.get(2).unwrap().clone(),
+            Some(arg.get(3).unwrap().to_owned()),
+        ),
+        _ => return Err("Invalid usage".to_string()),
+    };
+    check_extension_name_and_existence(&input, "csv")?;
+    let mut toml_path = String::new();
+    match conf {
+        Some(confpath) => {
+            check_extension_name_and_existence(&confpath, "toml")?;
+            toml_path.push_str(&confpath);
         }
-        4 => {
-            let input = arg.get(1).unwrap();
-            if !input.ends_with(".csv") {
-                return Err("Input must be a csv file!");
+        None => match env::var(ENV_VAR_NAME) {
+            Ok(path) => {
+                check_extension_name_and_existence(&path, "toml")?;
+                toml_path.push_str(&path);
             }
-            let output = arg.get(2).unwrap();
-            if !output.ends_with(".csv") {
-                return Err("Output must be a csv file!");
-            }
-            Ok(Some(Arguments {
-                config: get_config(Some(arg.get(3).unwrap().to_owned()))?,
-                input: input.to_owned(),
-                output: output.to_owned(),
-            }))
-        }
-        _ => Err("Invalid usage"),
+            Err(_) => return Err(ENV_NOT_FOUND.to_string()),
+        },
     }
+    Ok(Some(Arguments {
+        config: get_config(toml_path)?,
+        input,
+        output,
+    }))
 }
 
-fn get_config(conf: Option<String>) -> Result<Config, &'static str> {
-    // TODO: maybe there's a simpler stype of propagating error here
-    let conf_path = match conf {
-        Some(path) => path,
-        None => match env::var(ENV_VAR_NAME) {
-            Ok(path) => path,
-            _ => return Err(ENV_NOT_FOUND),
-        },
-    };
-    let config_content = std::fs::read_to_string(&conf_path).map_err(|_| FAILED_TO_READ_CONFIG)?;
+fn check_extension_name_and_existence(path: &str, extension: &str) -> Result<(), String> {
+    if !path.ends_with(extension) {
+        return Err(format!(
+            "The input '{}' must be a {} file!",
+            path, extension
+        ));
+    }
+    match Path::new(path).try_exists() {
+        Ok(exist) => {
+            if !exist {
+                return Err(format!("File not found: {}", path));
+            }
+        }
+        Err(_) => return Err(format!("No permission to read file: {}", path)),
+    }
+    Ok(())
+}
+
+fn get_config(conf: String) -> Result<Config, &'static str> {
+    let config_content = read_to_string(&conf).map_err(|_| FAILED_TO_READ_CONFIG)?;
     let config: Config = toml::from_str(&config_content).map_err(|_| FAILED_TO_PARSE_CONFIG)?;
     Ok(config)
 }
