@@ -1,4 +1,4 @@
-use std::{collections::HashSet, hash::{Hash, Hasher}};
+use std::hash::{Hash, Hasher};
 
 use serde::Deserialize;
 
@@ -49,7 +49,7 @@ pub struct Column {
     index: usize,
     name: String,
     fraction_digits: Option<usize>,
-    replacement: Option<HashSet<Replacement>>,
+    replacement: Option<Vec<Replacement>>,
 }
 
 pub struct Arguments {

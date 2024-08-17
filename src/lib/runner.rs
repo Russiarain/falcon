@@ -7,7 +7,7 @@ use crate::{Arguments, Column, Replacement};
 
 use super::helper::print_time_cost;
 
-fn apply_replacements(value: &str, replacements: &HashSet<Replacement>) -> String {
+fn apply_replacements(value: &str, replacements: &[Replacement]) -> String {
     replacements
         .iter()
         .find(|r| value == r.old)
@@ -50,17 +50,18 @@ fn get_col_fracdigits(
 fn merge_replacements(
     global: &Option<Vec<Replacement>>,
     this: &Option<Vec<Replacement>>,
-) -> Option<HashSet<Replacement>> {
+) -> Option<Vec<Replacement>> {
     match global {
         Some(replacements) => {
-            let mut set = HashSet::from_iter(replacements.clone().into_iter());
+            let mut set: HashSet<Replacement> = replacements.clone().into_iter().collect();
             if let Some(replacements) = this {
                 set.extend(replacements.clone().into_iter());
             }
-            return Some(set);
+            let val = set.into_iter().collect();
+            return Some(val);
         }
         None => match this {
-            Some(replacements) => Some(HashSet::from_iter(replacements.clone().into_iter())),
+            Some(replacements) => Some(replacements.clone()),
             None => None,
         },
     }
