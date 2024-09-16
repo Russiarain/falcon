@@ -1,5 +1,6 @@
-use std::{collections::HashSet, error::Error, fs::File, time::Instant};
+use std::{collections::HashSet, fs::File, time::Instant};
 
+use anyhow::{anyhow, Result};
 use csv::ReaderBuilder;
 use ryu::Buffer;
 
@@ -67,7 +68,7 @@ fn merge_replacements(
     }
 }
 
-pub fn run(arg: Arguments) -> Result<(), Box<dyn Error>> {
+pub fn run(arg: Arguments) -> Result<()> {
     let Arguments {
         config,
         input: input_path,
@@ -87,7 +88,7 @@ pub fn run(arg: Arguments) -> Result<(), Box<dyn Error>> {
                 fraction_digits: selected.fraction_digits,
                 replacement: merge_replacements(&config.replacement, &selected.replacement),
             }),
-            None => return Err(format!("Column: '{}' not found", selected.name).into()),
+            None => return Err(anyhow!("Column: '{}' not found", selected.name)),
         }
     }
 

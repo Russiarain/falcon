@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let _ = enable_ansi_support();
 
     let args = parser::parse().unwrap_or_else(|err| {
-        helper::print_error(&err);
+        helper::print_error(&err.to_string());
         process::exit(64);
     });
 
