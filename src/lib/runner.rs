@@ -1,4 +1,4 @@
-use std::{f64, fs::File, time::Instant};
+use std::{collections::HashMap, f64, fs::File, time::Instant};
 
 use anyhow::{anyhow, Result};
 use csv::ReaderBuilder;
@@ -60,6 +60,7 @@ pub fn run(arg: Arguments) -> Result<()> {
 
     let headers = rdr.headers()?.clone();
     let mut columns: Vec<Column> = Vec::new();
+    let mut transforms = HashMap::new();
     for selected in config.selected.unwrap().iter() {
         if selected.replacement.is_some() && selected.transform.is_some() {
             return Err(anyhow!(
@@ -68,9 +69,11 @@ pub fn run(arg: Arguments) -> Result<()> {
             ));
         }
         match headers.iter().position(|h| h == selected.name) {
-            Some(idx) => columns.push(Column {
+            Some(idx) => {
+                let output_name = selected.rename.clone().unwrap_or(selected.name.to_owned());
+                columns.push(Column {
                 index: idx,
-                name: selected.rename.clone().unwrap_or(selected.name.to_owned()),
+                name: output_name.clone(),
                 fraction_digits: selected.fraction_digits,
                 manipulate: {
                     if selected.replacement.is_none() && selected.transform.is_none() {
@@ -81,11 +84,14 @@ pub fn run(arg: Arguments) -> Result<()> {
                         Manipulate::Transform({
                             match selected.transform.as_ref().unwrap().parse::<meval::Expr>() {
                                 Ok(expr) => {
-                                    if let Err(_) = expr.clone().bind("x") {
-                                        return Err(anyhow!(
+                                    match expr.clone().bind("x") {
+                                        Ok(f)=>{
+                                            transforms.insert(output_name, f);
+                                        },
+                                        Err(_)=>return Err(anyhow!(
                                             "Failed to bind template variable of transform fcn for column: {}",
                                             selected.name
-                                        ));
+                                        ))
                                     }
                                     expr
                                 }
@@ -99,7 +105,7 @@ pub fn run(arg: Arguments) -> Result<()> {
                         })
                     }
                 },
-            }),
+            })},
             None => return Err(anyhow!("Column: '{}' not found", selected.name)),
         }
     }
@@ -147,8 +153,8 @@ pub fn run(arg: Arguments) -> Result<()> {
                         Manipulate::Replace(replacements) => {
                             value = apply_replacements(&value, replacements);
                         }
-                        Manipulate::Transform(expr) => {
-                            let transform = expr.clone().bind("x").unwrap();
+                        Manipulate::Transform(_) => {
+                            let transform = transforms.get(&col.name).unwrap();
                             value = transform(value.parse::<f64>().unwrap()).to_string();
                         }
                         _ => (),
