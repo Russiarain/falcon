@@ -45,6 +45,7 @@ pub struct Selected {
     rename: Option<String>,
     fraction_digits: Option<usize>,
     replacement: Option<Vec<Replacement>>,
+    transform: Option<String>,
 }
 
 impl Selected {

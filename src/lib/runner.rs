@@ -48,7 +48,6 @@ fn get_col_fracdigits(
     }
 }
 
-
 pub fn run(arg: Arguments) -> Result<()> {
     let Arguments {
         config,
@@ -62,6 +61,12 @@ pub fn run(arg: Arguments) -> Result<()> {
     let headers = rdr.headers()?.clone();
     let mut columns: Vec<Column> = Vec::new();
     for selected in config.selected.unwrap().iter() {
+        if selected.replacement.is_some() && selected.transform.is_some() {
+            return Err(anyhow!(
+                "replacement and transform can not be set at the same time for column: {}",
+                selected.name
+            ));
+        }
         match headers.iter().position(|h| h == selected.name) {
             Some(idx) => columns.push(Column {
                 index: idx,
