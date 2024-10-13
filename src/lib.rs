@@ -68,13 +68,19 @@ pub struct Column {
     index: usize,
     name: String,
     fraction_digits: Option<usize>,
-    replacement: Option<Vec<Replacement>>,
+    manipulate: Manipulate,
 }
 
 pub struct Arguments {
     config: Config,
     input: String,
     output: String,
+}
+
+pub enum Manipulate {
+    Replace(Vec<Replacement>),
+    Transform(meval::Expr),
+    None,
 }
 
 #[cfg(test)]

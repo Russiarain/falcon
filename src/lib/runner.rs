@@ -1,10 +1,10 @@
-use std::{fs::File, time::Instant};
+use std::{f64, fs::File, time::Instant};
 
 use anyhow::{anyhow, Result};
 use csv::ReaderBuilder;
 use ryu::Buffer;
 
-use crate::{Arguments, Column, Replacement};
+use crate::{Arguments, Column, Manipulate, Replacement};
 
 use super::helper::print_time_cost;
 
@@ -72,7 +72,33 @@ pub fn run(arg: Arguments) -> Result<()> {
                 index: idx,
                 name: selected.rename.clone().unwrap_or(selected.name.to_owned()),
                 fraction_digits: selected.fraction_digits,
-                replacement: selected.unique_replacements(),
+                manipulate: {
+                    if selected.replacement.is_none() && selected.transform.is_none() {
+                        Manipulate::None
+                    } else if selected.replacement.is_some() {
+                        Manipulate::Replace(selected.unique_replacements().unwrap())
+                    } else {
+                        Manipulate::Transform({
+                            match selected.transform.as_ref().unwrap().parse::<meval::Expr>() {
+                                Ok(expr) => {
+                                    if let Err(_) = expr.clone().bind("x") {
+                                        return Err(anyhow!(
+                                            "Failed to bind template variable of transform fcn for column: {}",
+                                            selected.name
+                                        ));
+                                    }
+                                    expr
+                                }
+                                Err(_) => {
+                                    return Err(anyhow!(
+                                        "Failed to parse transform fcn for column: {}",
+                                        selected.name
+                                    ))
+                                }
+                            }
+                        })
+                    }
+                },
             }),
             None => return Err(anyhow!("Column: '{}' not found", selected.name)),
         }
@@ -90,11 +116,14 @@ pub fn run(arg: Arguments) -> Result<()> {
         if line_num == 1 {
             for col in &mut columns {
                 let col_data = &record[col.index];
-                col.fraction_digits = get_col_fracdigits(
-                    std::str::from_utf8(col_data)?,
-                    config.fraction_digits,
-                    col.fraction_digits,
-                );
+                let col_data = std::str::from_utf8(col_data)?;
+                col.fraction_digits =
+                    get_col_fracdigits(col_data, config.fraction_digits, col.fraction_digits);
+                if let Manipulate::Transform(_) = col.manipulate {
+                    if let Err(_) = col_data.parse::<f64>() {
+                        col.manipulate = Manipulate::None;
+                    }
+                }
             }
         }
         if config.line_start.map_or(true, |start| line_num >= start)
@@ -104,9 +133,17 @@ pub fn run(arg: Arguments) -> Result<()> {
                 .iter()
                 .map(|col| {
                     let mut value = String::from_utf8(record[col.index].to_vec()).unwrap();
-                    if let Some(replacements) = &col.replacement {
-                        value = apply_replacements(&value, replacements);
+                    match &col.manipulate {
+                        Manipulate::Replace(replacements) => {
+                            value = apply_replacements(&value, replacements);
+                        }
+                        Manipulate::Transform(expr) => {
+                            let transform = expr.clone().bind("x").unwrap();
+                            value = transform(value.parse::<f64>().unwrap()).to_string();
+                        }
+                        _ => (),
                     }
+
                     if let Some(digits) = col.fraction_digits {
                         value = format_float(&value, digits, &mut buffer);
                     }
