@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs::File, time::Instant};
+use std::{fs::File, time::Instant};
 
 use anyhow::{anyhow, Result};
 use csv::ReaderBuilder;
@@ -48,25 +48,6 @@ fn get_col_fracdigits(
     }
 }
 
-fn merge_replacements(
-    global: &Option<Vec<Replacement>>,
-    this: &Option<Vec<Replacement>>,
-) -> Option<Vec<Replacement>> {
-    match global {
-        Some(replacements) => {
-            let mut set: HashSet<Replacement> = replacements.clone().into_iter().collect();
-            if let Some(replacements) = this {
-                set.extend(replacements.clone().into_iter());
-            }
-            let val = set.into_iter().collect();
-            return Some(val);
-        }
-        None => match this {
-            Some(replacements) => Some(replacements.clone()),
-            None => None,
-        },
-    }
-}
 
 pub fn run(arg: Arguments) -> Result<()> {
     let Arguments {
@@ -86,7 +67,7 @@ pub fn run(arg: Arguments) -> Result<()> {
                 index: idx,
                 name: selected.rename.clone().unwrap_or(selected.name.to_owned()),
                 fraction_digits: selected.fraction_digits,
-                replacement: merge_replacements(&config.replacement, &selected.replacement),
+                replacement: selected.unique_replacements(),
             }),
             None => return Err(anyhow!("Column: '{}' not found", selected.name)),
         }

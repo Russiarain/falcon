@@ -1,4 +1,7 @@
-use std::hash::{Hash, Hasher};
+use std::{
+    collections::HashSet,
+    hash::{Hash, Hasher},
+};
 
 use serde::Deserialize;
 
@@ -12,7 +15,6 @@ pub mod lib {
 pub struct Config {
     line_start: Option<i32>,
     line_end: Option<i32>,
-    replacement: Option<Vec<Replacement>>,
     fraction_digits: Option<usize>,
     selected: Option<Vec<Selected>>,
 }
@@ -43,6 +45,22 @@ pub struct Selected {
     rename: Option<String>,
     fraction_digits: Option<usize>,
     replacement: Option<Vec<Replacement>>,
+}
+
+impl Selected {
+    /// remove duplicates in replacements
+    fn unique_replacements(&self) -> Option<Vec<Replacement>> {
+        {
+            match &self.replacement {
+                Some(replacements) => {
+                    let set: HashSet<Replacement> = HashSet::from_iter(replacements.to_owned());
+                    let val = set.into_iter().collect();
+                    Some(val)
+                }
+                None => None,
+            }
+        }
+    }
 }
 
 pub struct Column {
