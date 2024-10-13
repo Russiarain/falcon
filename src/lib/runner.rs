@@ -16,17 +16,19 @@ fn apply_replacements(value: &str, replacements: &[Replacement]) -> String {
         .unwrap_or_else(|| value.to_owned())
 }
 
-fn format_float(value: &str, digits: usize, buffer: &mut Buffer) -> String {
-    match value.parse::<f32>() {
-        Ok(num) => {
-            if digits == 0 {
-                return (num.round() as i32).to_string();
-            }
-            let multiplier = 10.0f32.powi(digits as i32);
-            buffer
-                .format((num * multiplier).round() / multiplier)
-                .to_owned()
-        }
+fn f2str_with_digits(value: f64, digits: usize, buffer: &mut Buffer) -> String {
+    if digits == 0 {
+        return (value.round() as i32).to_string();
+    }
+    let multiplier = 10.0f64.powi(digits as i32);
+    buffer
+        .format((value * multiplier).round() / multiplier)
+        .to_owned()
+}
+
+fn format_with_digits(value: &str, digits: usize, buffer: &mut Buffer) -> String {
+    match value.parse::<f64>() {
+        Ok(num) => f2str_with_digits(num, digits, buffer),
         Err(_) => value.to_owned(),
     }
 }
@@ -105,7 +107,8 @@ pub fn run(arg: Arguments) -> Result<()> {
                         })
                     }
                 },
-            })},
+            })
+            }
             None => return Err(anyhow!("Column: '{}' not found", selected.name)),
         }
     }
@@ -155,13 +158,19 @@ pub fn run(arg: Arguments) -> Result<()> {
                         }
                         Manipulate::Transform(_) => {
                             let transform = transforms.get(&col.name).unwrap();
-                            value = transform(value.parse::<f64>().unwrap()).to_string();
+                            if let Some(digits) = col.fraction_digits {
+                                return f2str_with_digits(
+                                    transform(value.parse::<f64>().unwrap()),
+                                    digits,
+                                    &mut buffer,
+                                );
+                            }
                         }
                         _ => (),
                     }
 
                     if let Some(digits) = col.fraction_digits {
-                        value = format_float(&value, digits, &mut buffer);
+                        value = format_with_digits(&value, digits, &mut buffer);
                     }
                     value
                 })
