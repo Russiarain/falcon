@@ -18,19 +18,6 @@ line_end = 9
 # `3` (integer) or `foo` (strings that can't be parsed to number) won't be formatted.
 fraction_digits = 2
 
-# Global configuration of replacement table
-# Optional, can be overridden by configurations in [selected]
-# Both "old" and "new" should be strings
-# Note:
-# "old" must fully match to a cell's content to make the replacement happen
-[[replacement]]
-old = "65535"
-new = "0"
-
-[[replacement]]
-old = "hell0"
-new = "hello"
-
 # The following are selected table
 # The order of the columns in the output file is the same as the order of configurations here
 
@@ -50,7 +37,10 @@ fraction_digits = 0
 [[selected]]
 name = "Status"
 
-# Replacement for current selection
+# Replacement for current selection, optional
+# Both "old" and "new" should be strings
+# Note:
+# "old" must fully match to a cell's content to make the replacement happen
 [[selected.replacement]]
 old = "ON"
 new = "1"
@@ -63,7 +53,6 @@ new = "0"
 [[selected]]
 name = "ErrCode"
 
-# Override global replacements with same "old" value
 [[selected.replacement]]
 old = "65535"
 new = "7"
@@ -71,6 +60,14 @@ new = "7"
 # ===========   4th selection   ===========
 [[selected]]
 name = "Temperature"
-rename = "T"
-# this will override the global fraction_digits
+rename = "T(F)"
 fraction_digits = 1
+# use `x` as template variable for cell data
+# see https://docs.rs/meval/latest/meval/#supported-expressions for supported expressions
+transform = "x*1.8+32"
+
+# ===========   5th selection   ===========
+[[selected]]
+name = "Var2"
+fraction_digits = 6
+transform = "max(sin(x),cos(x))"
