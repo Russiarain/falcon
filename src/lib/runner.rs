@@ -117,11 +117,21 @@ pub fn run(arg: Arguments) -> Result<()> {
             for col in &mut columns {
                 let col_data = &record[col.index];
                 let col_data = std::str::from_utf8(col_data)?;
-                col.fraction_digits =
-                    get_col_fracdigits(col_data, config.fraction_digits, col.fraction_digits);
                 if let Manipulate::Transform(_) = col.manipulate {
                     if let Err(_) = col_data.parse::<f64>() {
                         col.manipulate = Manipulate::None;
+                    }
+                }
+                match col.manipulate {
+                    Manipulate::Transform(_) => {
+                        col.fraction_digits = col.fraction_digits.or_else(|| config.fraction_digits)
+                    }
+                    _ => {
+                        col.fraction_digits = get_col_fracdigits(
+                            col_data,
+                            config.fraction_digits,
+                            col.fraction_digits,
+                        );
                     }
                 }
             }
