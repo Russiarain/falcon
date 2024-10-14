@@ -7,6 +7,7 @@ Features
 - Columns selecting, rearranging, renaming
 - Rows selecting
 - Cell content replacing
+- Cell content transforming
 - Number rounding
 
 ## Usage

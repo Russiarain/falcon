@@ -62,7 +62,9 @@ new = "7"
 name = "Temperature"
 rename = "T(F)"
 fraction_digits = 1
-# use `x` as template variable for cell data
+# Transform function for this selection, optional
+# use `x` as template variable for original data
+# e.g.: "x+1", "1/(x+1)", "min(sqrt(x),sin(x))"
 # see https://docs.rs/meval/latest/meval/#supported-expressions for supported expressions
 transform = "x*1.8+32"
 
