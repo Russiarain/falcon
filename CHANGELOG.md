@@ -1,3 +1,13 @@
+## v0.3.0
+ 
+New Feature
+ 
+- A transform function can be applied to numerical cells by setting `transform` in `selected`
+ 
+Breaking Changes
+ 
+- Global `replacement` is removed
+
 ## v0.2.0
 
 Enhancement
