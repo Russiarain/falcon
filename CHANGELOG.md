@@ -1,3 +1,9 @@
+## v0.3.1
+
+Bugfix
+
+- Transform function now works independently of fraction_digits configuration
+
 ## v0.3.0
  
 New Feature

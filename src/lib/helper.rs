@@ -2,7 +2,7 @@ use nu_ansi_term::Color::{Green, LightBlue, LightCyan, Red, Yellow};
 use nu_ansi_term::Style;
 use nu_ansi_term::{AnsiString, AnsiStrings};
 
-const VERSION: &str = "0.3.0";
+const VERSION: &str = "0.3.1";
 const PRJ_URL: &str = "https://github.com/Russiarain/falcon";
 
 pub fn print_help() {
