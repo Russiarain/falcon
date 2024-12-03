@@ -66,6 +66,7 @@ fraction_digits = 1
 # use `x` as template variable for original data
 # e.g.: "x+1", "1/(x+1)", "min(sqrt(x),sin(x))"
 # see https://docs.rs/meval/latest/meval/#supported-expressions for supported expressions
+# Note: fraction_digits for transformed value defaults to 2 if it's neither specified in current selection nor in global
 transform = "x*1.8+32"
 
 # ===========   5th selection   ===========

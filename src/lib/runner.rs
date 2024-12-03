@@ -158,13 +158,11 @@ pub fn run(arg: Arguments) -> Result<()> {
                         }
                         Manipulate::Transform(_) => {
                             let transform = transforms.get(&col.name).unwrap();
-                            if let Some(digits) = col.fraction_digits {
-                                return f2str_with_digits(
-                                    transform(value.parse::<f64>().unwrap()),
-                                    digits,
-                                    &mut buffer,
-                                );
-                            }
+                            return f2str_with_digits(
+                                transform(value.parse::<f64>().unwrap()),
+                                col.fraction_digits.unwrap_or(2),
+                                &mut buffer,
+                            );
                         }
                         _ => (),
                     }
