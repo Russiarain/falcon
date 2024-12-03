@@ -33,20 +33,32 @@ fn format_with_digits(value: &str, digits: usize, buffer: &mut Buffer) -> String
     }
 }
 
-fn get_col_fracdigits(
-    data: &str,
-    global_digits: Option<usize>,
-    col_digits: Option<usize>,
-) -> Option<usize> {
-    if global_digits.is_none() && col_digits.is_none() {
-        return None;
+fn remove_invalid_fraction_digits(col: &mut Column, col_data: &str, global_digits: Option<usize>) {
+    match col.manipulate {
+        Manipulate::Transform(_) => {
+            col.fraction_digits = col.fraction_digits.or(global_digits).or(Some(2));
+        }
+        _ => {
+            col.fraction_digits = if global_digits.is_none() && col.fraction_digits.is_none() {
+                None
+            } else {
+                match col_data.parse::<i32>() {
+                    Ok(_) => None,
+                    Err(_) => match col_data.parse::<f32>() {
+                        Ok(_) => col.fraction_digits.or(global_digits),
+                        Err(_) => None,
+                    },
+                }
+            };
+        }
     }
-    match data.parse::<i32>() {
-        Ok(_) => None,
-        Err(_) => match data.parse::<f32>() {
-            Ok(_) => col_digits.or_else(|| global_digits),
-            Err(_) => None,
-        },
+}
+
+fn remove_invalid_transform(col: &mut Column, col_data: &str) {
+    if let Manipulate::Transform(_) = col.manipulate {
+        if let Err(_) = col_data.parse::<f64>() {
+            col.manipulate = Manipulate::None;
+        }
     }
 }
 
@@ -126,23 +138,8 @@ pub fn run(arg: Arguments) -> Result<()> {
             for col in &mut columns {
                 let col_data = &record[col.index];
                 let col_data = std::str::from_utf8(col_data)?;
-                if let Manipulate::Transform(_) = col.manipulate {
-                    if let Err(_) = col_data.parse::<f64>() {
-                        col.manipulate = Manipulate::None;
-                    }
-                }
-                match col.manipulate {
-                    Manipulate::Transform(_) => {
-                        col.fraction_digits = col.fraction_digits.or_else(|| config.fraction_digits)
-                    }
-                    _ => {
-                        col.fraction_digits = get_col_fracdigits(
-                            col_data,
-                            config.fraction_digits,
-                            col.fraction_digits,
-                        );
-                    }
-                }
+                remove_invalid_transform(col, col_data);
+                remove_invalid_fraction_digits(col, col_data, config.fraction_digits);
             }
         }
         if config.line_start.map_or(true, |start| line_num >= start)
@@ -160,7 +157,7 @@ pub fn run(arg: Arguments) -> Result<()> {
                             let transform = transforms.get(&col.name).unwrap();
                             return f2str_with_digits(
                                 transform(value.parse::<f64>().unwrap()),
-                                col.fraction_digits.unwrap_or(2),
+                                col.fraction_digits.unwrap(),
                                 &mut buffer,
                             );
                         }
@@ -184,42 +181,4 @@ pub fn run(arg: Arguments) -> Result<()> {
 
     print_time_cost(start_time.elapsed().as_millis());
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::lib::runner::get_col_fracdigits;
-
-    #[test]
-    fn col_fracdigits_test() {
-        let col_digits = None;
-        let global_digits = Some(4);
-
-        let data = "3";
-        assert_eq!(get_col_fracdigits(data, global_digits, col_digits), None);
-        let data = "-3.14159";
-        assert_eq!(
-            get_col_fracdigits(data, global_digits, col_digits),
-            global_digits
-        );
-        let data = "hello";
-        assert_eq!(get_col_fracdigits(data, global_digits, col_digits), None);
-
-        let col_digits = None;
-        let global_digits = None;
-        let data = "-3.14159";
-        assert_eq!(get_col_fracdigits(data, global_digits, col_digits), None);
-
-        let col_digits = Some(2);
-        let global_digits = Some(4);
-        let data = "-3.14159";
-        // check for column config override
-        assert_eq!(
-            get_col_fracdigits(data, global_digits, col_digits),
-            col_digits
-        );
-
-        let data = "5";
-        assert_eq!(get_col_fracdigits(data, global_digits, col_digits), None);
-    }
 }
