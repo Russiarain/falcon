@@ -77,6 +77,7 @@ pub struct Arguments {
     output: String,
 }
 
+#[derive(PartialEq)]
 pub enum Manipulate {
     Replace(Vec<Replacement>),
     Transform(meval::Expr),

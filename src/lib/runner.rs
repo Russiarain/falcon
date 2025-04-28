@@ -1,6 +1,6 @@
 use std::{collections::HashMap, f64, fs::File, time::Instant};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use csv::ReaderBuilder;
 use ryu::Buffer;
 
@@ -137,7 +137,7 @@ pub fn run(arg: Arguments) -> Result<()> {
         if line_num == 1 {
             for col in &mut columns {
                 let col_data = &record[col.index];
-                if col_data.is_empty() {
+                if col.manipulate != Manipulate::None && col_data.is_empty() {
                     return Err(anyhow!(
                         "First line of column: '{}' must not be empty!",
                         col.name
