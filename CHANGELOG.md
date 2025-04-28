@@ -1,3 +1,13 @@
+## v0.3.2
+
+Enhancement
+
+- Empty cells in selected columns won't cause an error now
+
+### Note:
+
+If `replacement` or `transform` is configured for the selected column, the first cell of the column cannot be empty.
+
 ## v0.3.1
 
 Bugfix
