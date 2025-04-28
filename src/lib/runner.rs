@@ -138,7 +138,7 @@ pub fn run(arg: Arguments) -> Result<()> {
             for col in &mut columns {
                 let col_data = &record[col.index];
                 if col_data.is_empty() {
-                    return  Err(anyhow!(
+                    return Err(anyhow!(
                         "First line of column: '{}' must not be empty!",
                         col.name
                     ));
@@ -155,6 +155,9 @@ pub fn run(arg: Arguments) -> Result<()> {
                 .iter()
                 .map(|col| {
                     let mut value = String::from_utf8(record[col.index].to_vec()).unwrap();
+                    if value.is_empty() {
+                        return value;
+                    }
                     match &col.manipulate {
                         Manipulate::Replace(replacements) => {
                             value = apply_replacements(&value, replacements);
