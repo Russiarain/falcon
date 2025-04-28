@@ -137,6 +137,12 @@ pub fn run(arg: Arguments) -> Result<()> {
         if line_num == 1 {
             for col in &mut columns {
                 let col_data = &record[col.index];
+                if col_data.is_empty() {
+                    return  Err(anyhow!(
+                        "First line of column: '{}' must not be empty!",
+                        col.name
+                    ));
+                }
                 let col_data = std::str::from_utf8(col_data)?;
                 remove_invalid_transform(col, col_data);
                 remove_invalid_fraction_digits(col, col_data, config.fraction_digits);
