@@ -20,6 +20,7 @@ fraction_digits = 2
 
 # The following are selected table
 # The order of the columns in the output file is the same as the order of configurations here
+# If you want to select all columns, you can just leave this section empty
 
 # ===========   1st selection   ===========
 [[selected]]
