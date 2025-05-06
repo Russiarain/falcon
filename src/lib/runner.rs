@@ -75,53 +75,70 @@ pub fn run(arg: Arguments) -> Result<()> {
     let headers = rdr.headers()?.clone();
     let mut columns: Vec<Column> = Vec::new();
     let mut transforms = HashMap::new();
-    for selected in config.selected.unwrap().iter() {
-        if selected.replacement.is_some() && selected.transform.is_some() {
-            return Err(anyhow!(
-                "replacement and transform can not be set at the same time for column: {}",
-                selected.name
-            ));
-        }
-        match headers.iter().position(|h| h == selected.name) {
-            Some(idx) => {
-                let output_name = selected.rename.clone().unwrap_or(selected.name.to_owned());
-                columns.push(Column {
-                index: idx,
-                name: output_name.clone(),
-                fraction_digits: selected.fraction_digits,
-                manipulate: {
-                    if selected.replacement.is_none() && selected.transform.is_none() {
-                        Manipulate::None
-                    } else if selected.replacement.is_some() {
-                        Manipulate::Replace(selected.unique_replacements().unwrap())
-                    } else {
-                        Manipulate::Transform({
-                            match selected.transform.as_ref().unwrap().parse::<meval::Expr>() {
-                                Ok(expr) => {
-                                    match expr.clone().bind("x") {
-                                        Ok(f)=>{
-                                            transforms.insert(output_name, f);
-                                        },
-                                        Err(_)=>return Err(anyhow!(
-                                            "Failed to bind template variable of transform fcn for column: {}",
-                                            selected.name
-                                        ))
-                                    }
-                                    expr
+    match &config.selected {
+        Some(selections) => {
+            for selected in selections {
+                if selected.replacement.is_some() && selected.transform.is_some() {
+                    return Err(anyhow!(
+                        "replacement and transform can not be set at the same time for column: {}",
+                        selected.name
+                    ));
+                }
+                match headers.iter().position(|h| h == selected.name) {
+                    Some(idx) => {
+                        let output_name =
+                            selected.rename.clone().unwrap_or(selected.name.to_owned());
+                        columns.push(Column {
+                            index: idx,
+                            name: output_name.clone(),
+                            fraction_digits: selected.fraction_digits,
+                            manipulate: {
+                                if selected.replacement.is_none() && selected.transform.is_none() {
+                                    Manipulate::None
+                                } else if selected.replacement.is_some() {
+                                    Manipulate::Replace(selected.unique_replacements().unwrap())
+                                } else {
+                                    Manipulate::Transform({
+                                        match selected.transform.as_ref().unwrap().parse::<meval::Expr>() {
+                                            Ok(expr) => {
+                                                match expr.clone().bind("x") {
+                                                    Ok(f)=>{
+                                                        transforms.insert(output_name, f);
+                                                    },
+                                                    Err(_)=>return Err(anyhow!(
+                                                        "Failed to bind template variable of transform fcn for column: {}",
+                                                        selected.name
+                                                    ))
+                                                }
+                                                expr
+                                            }
+                                            Err(_) => {
+                                                return Err(anyhow!(
+                                                    "Failed to parse transform fcn for column: {}",
+                                                    selected.name
+                                                ))
+                                            }
+                                        }
+                                    })
                                 }
-                                Err(_) => {
-                                    return Err(anyhow!(
-                                        "Failed to parse transform fcn for column: {}",
-                                        selected.name
-                                    ))
-                                }
-                            }
-                        })
+                            },
+                        });
                     }
-                },
-            })
+                    None => return Err(anyhow!("Column: '{}' not found", selected.name)),
+                }
             }
-            None => return Err(anyhow!("Column: '{}' not found", selected.name)),
+        }
+        None => {
+            let mut idx = 0;
+            for header in headers.iter() {
+                columns.push(Column {
+                    index: idx,
+                    name: header.to_owned(),
+                    fraction_digits: config.fraction_digits,
+                    manipulate: Manipulate::None,
+                });
+                idx += 1;
+            }
         }
     }
 
